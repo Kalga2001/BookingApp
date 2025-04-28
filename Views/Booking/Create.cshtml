@@ -1,0 +1,200 @@
+﻿@model BookingRequest
+
+@{
+    ViewData["Title"] = "Create Booking";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Create Booking</h4>
+        </div>
+        <div class="card-body">
+            <form asp-action="Create" asp-controller="Booking" method="post">
+                <div class="row">
+                    <div class="col-md-6 mb-3" style="display:none;">
+                        <label asp-for="RoomID" class="form-label"></label>
+                        <input asp-for="RoomID" class="form-control form-control-sm" />
+                        <span asp-validation-for="RoomID" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 mb-3" style="display:none;">
+                        <label asp-for="UserID" class="form-label"></label>
+                        <input asp-for="UserID" class="form-control form-control-sm" />
+                        <span asp-validation-for="UserID" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="From" class="form-label"></label>
+                        <input asp-for="From" type="datetime-local" class="form-control form-control-sm" />
+                        <span asp-validation-for="From" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="To" class="form-label"></label>
+                        <input asp-for="To" type="datetime-local" class="form-control form-control-sm" />
+                        <span asp-validation-for="To" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="ChildrenCount" class="form-label"></label>
+                        <input asp-for="ChildrenCount" class="form-control form-control-sm" min="1" />
+                        <span asp-validation-for="ChildrenCount" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="Price" class="form-label"></label>
+                        <input asp-for="Price" class="form-control form-control-sm" />
+                        <span asp-validation-for="Price" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label asp-for="TypeOfPayment" class="form-label"></label>
+                        <select asp-for="TypeOfPayment" class="form-control form-control-sm" id="TypeOfPayment">
+                            <option value="">-- Select Payment Type --</option>
+                            <option value="0" id="0">Credit Card</option>
+                            <option value="1" id="1">Cash</option>
+                        </select>
+                        <span asp-validation-for="TypeOfPayment" class="text-danger"></span>
+                    </div>
+
+                </div>
+                <div class="text-end">
+                    <button type="submit" class="btn btn-success">Create Booking</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const ROOM_ID = getCookie('ROOM_ID');
+        const PRICE = getCookie('PRICE');
+        const USER_ID = getCookie('USER_ID');
+
+        if (ROOM_ID) {
+            document.getElementById("RoomID").value = ROOM_ID;
+            document.getElementById("RoomID").hidden = true;
+        }
+
+        if (PRICE) {
+            document.getElementById("Price").value = PRICE;
+            document.getElementById("Price").disabled = true;
+        }
+
+        if (USER_ID) {
+            document.getElementById("UserID").value = USER_ID;
+            document.getElementById("UserID").hidden = true;
+        }
+
+        const cookieValues = {
+            roomId: document.getElementById("RoomID").value,
+            price: document.getElementById("Price").value,
+            userId: document.getElementById("UserID").value
+        };
+
+        const paymentTypeSelect = document.getElementById("TypeOfPayment");
+        const submitButton = document.querySelector('button[type="submit"]');
+
+        paymentTypeSelect.disabled = false;
+        submitButton.disabled = true; 
+
+        paymentTypeSelect.addEventListener('change', checkFormValidity);
+        document.getElementById("From").addEventListener('input', checkFormValidity);
+        document.getElementById("To").addEventListener('input', checkFormValidity);
+        document.getElementById("ChildrenCount").addEventListener('input', checkFormValidity);
+
+        function checkFormValidity() {
+            const from = document.getElementById("From").value;
+            const to = document.getElementById("To").value;
+            const childrenCount = document.getElementById("ChildrenCount").value;
+            const paymentType = paymentTypeSelect.value;
+
+            if (from && to && childrenCount && paymentType) {
+                submitButton.disabled = false;
+            } else {
+                submitButton.disabled = true;
+            }
+        }
+
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            if (paymentTypeSelect.value === "")
+                paymentTypeSelect.value = 1;
+
+            const bookingData = {
+                roomId: cookieValues.roomId,
+                userId: cookieValues.userId,
+                from: document.getElementById("From").value,
+                to: document.getElementById("To").value,
+                childrenCount: document.getElementById("ChildrenCount").value,
+                price: cookieValues.price,
+                typeOfPayment: paymentTypeSelect.value
+            };
+
+            $.ajax({
+                url: "/booking/create",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(bookingData),
+                success: function (response) {
+                if(response.code == 200) {
+                    showNotification(response.message, true);
+                    setTimeout(function () {
+                        if (bookingData.typeOfPayment === "0") {
+                            window.location.href = '/payment';
+                        } else {
+                            window.location.href = '/successbooking';
+                        }
+                    }, 3000);
+                } else {
+                    showNotification(response.message, false);
+                }
+            },
+                error: function (xhr, status, error) {
+                    showNotification(xhr.responseJSON.message, false);
+                }
+            });
+        });
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return '';
+        }
+
+        function showNotification(message, isSuccess = true) {
+            const notification = document.createElement('div');
+            notification.textContent = message;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.padding = '10px 20px';
+            notification.style.backgroundColor = isSuccess ? '#28a745' : '#dc3545';
+            notification.style.color = 'white';
+            notification.style.borderRadius = '5px';
+            notification.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
+            notification.style.zIndex = 1000;
+            notification.style.opacity = '0';
+            notification.style.transition = 'opacity 0.5s';
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.opacity = '1';
+            }, 50);
+
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                    setTimeout(() => {
+                    notification.remove();
+            }, 500);
+        }, 3000);
+    }
+    });
+</script>
+
+
+
+

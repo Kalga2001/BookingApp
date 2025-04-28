@@ -1,0 +1,147 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f7f7f7;
+        }
+
+        .login_section {
+            padding: 80px 0;
+        }
+
+        .login_form {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .section_title h2 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .section_title p {
+            font-size: 16px;
+            color: #777;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .text-danger {
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+
+    <section class="login_section">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-6 col-md-8">
+                    <div class="section_title text-center mb-4">
+                        <h2>Login</h2>
+                        <p>Access your account</p>
+                    </div>
+                    <form class="login_form" id="loginForm" action="/Account/Login" method="post">
+                        <div class="form-group">
+                            <label for="email">Email or Username</label>
+                            <input type="text" name="email" id="email" class="form-control" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input type="password" name="password" id="password" class="form-control" required>
+                        </div>
+
+                        <div class="form-group form-check">
+                            <input type="checkbox" class="form-check-input" id="rememberMe" name="rememberMe">
+                            <label class="form-check-label" for="rememberMe">Remember me</label>
+                        </div>
+
+                        <div class="form-group text-center">
+                            <button type="submit" class="btn btn-primary btn-block">Login</button>
+                        </div>
+
+                        <div class="form-group text-center">
+                            <a href="/Account/ForgotPassword">Forgot password?</a>
+                        </div>
+
+                        <div class="form-group text-center">
+                            <a href="/Account/Register">Register</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</body>
+</html>
+
+<script>
+    document.getElementById("loginForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+        const payload = {
+            email: document.getElementById("email").value,
+            password: document.getElementById("password").value,
+            rememberMe: document.getElementById("rememberMe").checked
+        };
+
+        const response = await fetch("/Account/Login", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+
+        if (result.code == 200) {
+            showNotification(result.message, true);
+                setTimeout(() => {
+                    window.location.href = "/home";
+                }, 1000);
+        } else {
+            showNotification(result.message, false);
+        }
+    });
+
+    function showNotification(message, isSuccess = true) {
+        const notification = document.createElement('div');
+        notification.textContent = message;
+        notification.style.position = 'fixed';
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.padding = '10px 20px';
+        notification.style.backgroundColor = isSuccess ? '#28a745' : '#dc3545';
+        notification.style.color = 'white';
+        notification.style.borderRadius = '5px';
+        notification.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
+        notification.style.zIndex = 1000;
+        notification.style.opacity = '0';
+        notification.style.transition = 'opacity 0.5s';
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.opacity = '1';
+        }, 50);
+
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                notification.remove();
+            }, 500);
+        }, 3000);
+    }
+</script>
+
